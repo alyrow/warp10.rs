@@ -1,9 +1,9 @@
-#[cfg(feature = "json")]
-use crate::error;
-
+use chrono::{DateTime, FixedOffset};
 #[cfg(feature = "json")]
 use serde::Serialize;
-use time::OffsetDateTime;
+
+#[cfg(feature = "json")]
+use crate::error;
 
 fn url_encode(input: &str) -> String {
     let mut s = String::new();
@@ -136,7 +136,7 @@ impl Warp10Serializable for Label {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Data {
-    date: Option<OffsetDateTime>,
+    date: Option<DateTime<FixedOffset>>,
     geo: Option<GeoValue>,
     name: String,
     labels: Vec<Label>,
@@ -145,7 +145,7 @@ pub struct Data {
 
 impl Data {
     pub fn new(
-        date: OffsetDateTime,
+        date: DateTime<FixedOffset>,
         geo: Option<GeoValue>,
         name: String,
         labels: Vec<Label>,
@@ -197,7 +197,7 @@ impl Warp10Serializable for Data {
 
         match self.date {
             Some(date) => {
-                let date_ms = date.unix_timestamp() * 1000000 + (date.microsecond() as Long);
+                let date_ms = date.timestamp_micros();
                 format!(
                     "{}/{} {}{{{}}} {}",
                     date_ms,
@@ -224,9 +224,9 @@ impl Warp10Serializable for Data {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use chrono::TimeDelta;
 
-    use time::{Duration, OffsetDateTime};
+    use super::*;
 
     #[test]
     fn serialize_int() {
@@ -281,7 +281,7 @@ mod tests {
     fn serialize_data() {
         assert_eq!(
             Data::new(
-                OffsetDateTime::UNIX_EPOCH + Duration::new(25, 123456789),
+                (chrono::DateTime::UNIX_EPOCH + TimeDelta::new(25, 123456789).unwrap()).fixed_offset(),
                 None,
                 "original name".to_string(),
                 vec![
@@ -295,7 +295,7 @@ mod tests {
         );
         assert_eq!(
             Data::new(
-                OffsetDateTime::UNIX_EPOCH + Duration::new(25, 123456789),
+                (chrono::DateTime::UNIX_EPOCH + TimeDelta::new(25, 123456789).unwrap()).fixed_offset(),
                 Some(GeoValue::new(42.66, 32.85, Some(10))),
                 "original name".to_string(),
                 vec![
